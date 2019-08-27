@@ -54,7 +54,7 @@ workflows:
 jobs:
   build-jruby:
     docker:
-      - image: heroku/heroku:18
+      - image: heroku/heroku:18-build
     parameters:
       stack:
         type: string
