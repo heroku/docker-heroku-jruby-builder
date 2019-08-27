@@ -28,7 +28,7 @@ workflows:
           aws_access_key_id: $PRODUCTION_AWS_ACCESS_KEY_ID
           aws_secret_access_key: $PRODUCTION_AWS_SECRET_ACCESS_KEY
           requires:
-            - build-openjdk
+            - build-jruby
       - verify:
           stack: "heroku-16"
           bucket_name: $PRODUCTION_BUCKET_NAME
@@ -111,9 +111,9 @@ jobs:
           name: Setup Heroku
           command: |
             curl https://cli-assets.heroku.com/install.sh | sh
-            printf "machine api.heroku.com\n  login jkutner+tunnels@gmail.com\n  password $HEROKU_API_KEY\n" > ~/.netrc
+            printf "machine api.heroku.com\n  login jpkutner+tunnels@gmail.com\n  password $HEROKU_API_KEY\n" > ~/.netrc
             chmod 0600 ~/.netrc
       - checkout
       - run:
-          name: Verifying JDK
+          name: Verifying JRuby
           command: echo "TODO"
