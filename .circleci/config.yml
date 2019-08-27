@@ -53,8 +53,8 @@ workflows:
 
 jobs:
   build-jruby:
-    docker:
-      - image: heroku/heroku:18-build
+    machine:
+      docker_layer_caching: true
     parameters:
       stack:
         type: string
