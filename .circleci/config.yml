@@ -61,6 +61,7 @@ jobs:
     steps:
       - checkout
       - run: |
+          gem install bundler -v 1.17.3
           bundle install
           bundle exec rake generate_image[<< parameters.stack >>]
           bundle exec rake new[$JRUBY_VERSION,<< parameters.stack >>]
