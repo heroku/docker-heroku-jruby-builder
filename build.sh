@@ -4,7 +4,7 @@ workspace_dir=$1
 output_dir=$2
 cache_dir=$3
 
-jruby_src_file=jruby-src-$VERSION.tar.gz
+jruby_src_file="jruby-dist-$VERSION-src.zip"
 
 cd $cache_dir
 if [ $GIT_URL ]; then
@@ -17,12 +17,12 @@ if [ $GIT_URL ]; then
 else
 	if [ ! -f $jruby_src_file ]; then
 		echo "Downloading $jruby_src_file"
-		curl -s -O -L "https://s3.amazonaws.com/jruby.org/downloads/$VERSION/$jruby_src_file"
+		curl -s -O -L "https://repo1.maven.org/maven2/org/jruby/jruby-dist/$VERSION/$jruby_src_file"
 	fi
 fi
 
 cd $workspace_dir
-tar zxf $cache_dir/$jruby_src_file
+unzip $cache_dir/$jruby_src_file
 cd jruby-$VERSION
 if [ "$VERSION" = "1.7.5" ]; then
 	package_file="/tmp/buildpack_*/vendor/package.rb"
