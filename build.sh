@@ -7,17 +7,17 @@ cache_dir=$3
 jruby_src_file="jruby-dist-$VERSION-src.zip"
 
 cd $cache_dir
-if [ $GIT_URL ]; then
+if [ -n "${GIT_URL:-}" ]; then
 	git clone $GIT_URL release
 	cd release
-	git checkout $GIT_TREEISH
+	git checkout ${GIT_TREEISH:-$VERSION}
 	MAVEN_OPTS=-XX:MaxPermSize=768m ./mvnw install -Pdist
 	cp maven/jruby-dist/target/jruby-dist-$VERSION-src.tar.gz $cache_dir/$jruby_src_file
 	cd ..
 else
 	if [ ! -f $jruby_src_file ]; then
 		echo "Downloading $jruby_src_file"
-		curl -s -O -L "https://repo1.maven.org/maven2/org/jruby/jruby-dist/$VERSION/$jruby_src_file"
+		curl -fs -O -L "https://repo1.maven.org/maven2/org/jruby/jruby-dist/$VERSION/$jruby_src_file"
 	fi
 fi
 
@@ -43,23 +43,23 @@ minor=$2
 patch=$3
 
 if [ -f mvnw ]; then
-  ./mvnw -Djruby.default.ruby.version=$major.$minor -Dmaven.repo.local=$cache_dir/.m2/repository -T4
+	./mvnw -Djruby.default.ruby.version=$major.$minor -Dmaven.repo.local=$cache_dir/.m2/repository -T4
 else
 	cd /opt
 	curl http://apache.org/dist/maven/maven-3/3.3.1/binaries/apache-maven-3.3.1-bin.tar.gz -s -o - | tar xzmf -
 	ln -s /opt/apache-maven-3.3.1/bin/mvn /usr/local/bin
 	cd -
-  mvn -Djruby.default.ruby.version=$major.$minor -Dmaven.repo.local=$cache_dir/.m2/repository -T4
+	mvn -Djruby.default.ruby.version=$major.$minor -Dmaven.repo.local=$cache_dir/.m2/repository -T4
 fi
 if [ $? -ne 0 ]; then
-  exit $1
+	exit $1
 fi
 rm bin/*.bat
 rm bin/*.dll
 rm bin/*.exe
 rm -rf lib/target
 if [ -d lib/jni ] ; then
-  find lib/jni/* ! -name x86_64-Linux -print0 | xargs -0 rm -rf --
+	find lib/jni/* ! -name x86_64-Linux -print0 | xargs -0 rm -rf --
 fi
 #ln -s jruby bin/ruby
 mkdir -p $output_dir
