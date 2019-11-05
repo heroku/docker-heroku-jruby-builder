@@ -98,9 +98,14 @@ jobs:
           name: Upload JRuby to S3
           command: |
             export RUBY_VERSIONS=$(ls rubies/<< parameters.stack >>/ruby-*-jruby-$JRUBY_VERSION.sh | sed -e 's/^.*ruby-\(.*\)-jruby.*$/\1/g')
-            for ruby_version in $RUBY_VERSIONS; do aws s3 cp /tmp/workspace/builds/<< parameters.stack >>/ruby-$ruby_version-jruby-$JRUBY_VERSION.tgz \
-              s3://<< parameters.bucket_name >>/<< parameters.stack >>/ruby-$ruby_version-jruby-$JRUBY_VERSION.tgz \
-              --profile "<< parameters.bucket_name >>" --acl public-read; done
+            if [ $RUBY_VERSIONS ]; then
+              for ruby_version in $RUBY_VERSIONS; do aws s3 cp /tmp/workspace/builds/<< parameters.stack >>/ruby-$ruby_version-jruby-$JRUBY_VERSION.tgz \
+                s3://<< parameters.bucket_name >>/<< parameters.stack >>/ruby-$ruby_version-jruby-$JRUBY_VERSION.tgz \
+                --profile "<< parameters.bucket_name >>" --acl public-read; done
+            else
+              exit 1
+            fi
+
   verify:
     docker:
       - image: heroku/heroku:18
