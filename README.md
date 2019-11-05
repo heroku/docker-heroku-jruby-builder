@@ -4,6 +4,15 @@ A set of scripts used to build JRuby packages for Heroku
 
 ## Building on CircleCI
 
+In order to build, the rubies script must exist and be committed to master.
+
+```
+$ bundle exec rake new[9.2.8.0,heroku-18]
+$ git add rubies/
+$ git commit -m "jruby 9.2.8.0"
+$ git push origin master
+```
+
 Pass the JRuby version to the build script:
 
 ```
