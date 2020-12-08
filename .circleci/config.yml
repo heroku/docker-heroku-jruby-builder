@@ -50,6 +50,22 @@ workflows:
           bucket_name: $PRODUCTION_BUCKET_NAME
           requires:
             - upload-to-s3
+  heroku-20:
+    jobs:
+      - build-jruby:
+          stack: "heroku-20"
+      - upload-to-s3:
+          stack: "heroku-20"
+          bucket_name: $PRODUCTION_BUCKET_NAME
+          aws_access_key_id: $PRODUCTION_AWS_ACCESS_KEY_ID
+          aws_secret_access_key: $PRODUCTION_AWS_SECRET_ACCESS_KEY
+          requires:
+            - build-jruby
+      - verify:
+          stack: "heroku-20"
+          bucket_name: $PRODUCTION_BUCKET_NAME
+          requires:
+            - upload-to-s3
 
 jobs:
   build-jruby:

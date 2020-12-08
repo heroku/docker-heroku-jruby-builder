@@ -1,8 +1,8 @@
-FROM heroku/heroku:18
+FROM heroku/heroku:20
 MAINTAINER hone
 
 COPY docker_support/install-jdk.sh /tmp/install-jdk.sh
-ENV STACK=heroku-18
+ENV STACK=heroku-20
 RUN bash /tmp/install-jdk.sh "1.8"
 ENV PATH=/opt/jdk/.jdk/bin:$PATH
 
