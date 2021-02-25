@@ -1,3 +1,5 @@
+S3_BUCKET_NAME = "heroku-buildpack-ruby"
+
 desc "Generate new jruby shell scripts"
 task :new, [:version, :stack] do |t, args|
   source_folder = "rubies/#{args[:stack]}"
@@ -38,21 +40,22 @@ end
 
 desc "Upload a ruby to S3"
 task :upload, [:version, :ruby_version, :stack] do |t, args|
-  require 'aws-sdk'
+  require 'aws-sdk-s3'
 
-  puts "WARNING: Empty AWS_PROFILE" if ENV['AWS_PROFILE'].nil?
+  filename        = "ruby-#{args[:ruby_version]}-jruby-#{args[:version]}.tgz"
+  profile_name = "#{S3_BUCKET_NAME}#{args[:staging] ? "-staging" : ""}"
 
-  file        = "ruby-#{args[:ruby_version]}-jruby-#{args[:version]}.tgz"
-  s3_key      = "#{args[:stack]}/#{file}"
-  bucket_name = "heroku-buildpack-ruby"
-  s3          = AWS::S3.new
-  bucket      = s3.buckets[bucket_name]
-  object      = bucket.objects[s3_key]
-  build_file  = "builds/#{args[:stack]}/#{file}"
+  s3_key       = "#{args[:stack]}/#{filename.sub(/-(preview|rc)\d+/, '')}"
 
-  puts "Uploading #{build_file} to s3://#{bucket_name}/#{s3_key}"
-  object.write(file: build_file)
-  object.acl = :public_read
+  s3 = Aws::S3::Resource.new(region: "us-east-1", access_key_id: ENV.fetch("AWS_ACCESS_KEY_ID"), secret_access_key: ENV.fetch("AWS_SECRET_ACCESS_KEY"))
+  bucket       = s3.bucket(profile_name)
+  s3_object    = bucket.object(s3_key)
+  output_file  = "builds/#{args[:stack]}/#{filename}"
+
+  puts "Uploading #{output_file} to s3://#{profile_name}/#{s3_key}"
+  File.open(output_file, 'rb') do |file|
+    s3_object.put(body: file, acl: "public-read")
+  end
 end
 
 desc "Build docker image for stack"
