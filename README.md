@@ -42,10 +42,10 @@ These enivronment variables are used by the CircleCI project:
 Run the following:
 
 ```
-$ bundle exec rake generate_image[heroku-18]
-$ bundle exec rake new[9.2.8.0,heroku-18]
-$ bash rubies/heroku-18/ruby-2.5.3-jruby-9.2.8.0.sh
-$ bundle exec rake upload[9.2.8.0,2.5.3,heroku-18]
+bundle exec rake "generate_image[heroku-18]"
+bundle exec rake "new[9.3.0.0,heroku-18]"
+bash rubies/heroku-18/ruby-2.6.8-jruby-9.3.0.0.sh
+bundle exec rake "upload[9.3.0.0,2.6.8,heroku-18]"
 ```
 
 You can replace `heroku-18` and `9.2.8.0` with any stack and JRuby version.
