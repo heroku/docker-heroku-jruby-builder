@@ -121,23 +121,3 @@ jobs:
             else
               exit 1
             fi
-
-  verify:
-    docker:
-      - image: heroku/heroku:18
-    parameters:
-      bucket_name:
-        type: string
-      stack:
-        type: string
-    steps:
-      - run:
-          name: Setup Heroku
-          command: |
-            curl https://cli-assets.heroku.com/install.sh | sh
-            printf "machine api.heroku.com\n  login jpkutner+tunnels@gmail.com\n  password $HEROKU_API_KEY\n" > ~/.netrc
-            chmod 0600 ~/.netrc
-      - checkout
-      - run:
-          name: Verifying JRuby
-          command: echo "TODO"
