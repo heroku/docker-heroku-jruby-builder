@@ -2,38 +2,6 @@ version: 2.1
 
 workflows:
   version: 2.1
-  cedar-14:
-    jobs:
-      - build-jruby:
-          stack: "cedar-14"
-      - upload-to-s3:
-          stack: "cedar-14"
-          bucket_name: $PRODUCTION_BUCKET_NAME
-          aws_access_key_id: $PRODUCTION_AWS_ACCESS_KEY_ID
-          aws_secret_access_key: $PRODUCTION_AWS_SECRET_ACCESS_KEY
-          requires:
-            - build-jruby
-      - verify:
-          stack: "cedar-14"
-          bucket_name: $PRODUCTION_BUCKET_NAME
-          requires:
-            - upload-to-s3
-  heroku-16:
-    jobs:
-      - build-jruby:
-          stack: "heroku-16"
-      - upload-to-s3:
-          stack: "heroku-16"
-          bucket_name: $PRODUCTION_BUCKET_NAME
-          aws_access_key_id: $PRODUCTION_AWS_ACCESS_KEY_ID
-          aws_secret_access_key: $PRODUCTION_AWS_SECRET_ACCESS_KEY
-          requires:
-            - build-jruby
-      - verify:
-          stack: "heroku-16"
-          bucket_name: $PRODUCTION_BUCKET_NAME
-          requires:
-            - upload-to-s3
   heroku-18:
     jobs:
       - build-jruby:
@@ -45,11 +13,6 @@ workflows:
           aws_secret_access_key: $PRODUCTION_AWS_SECRET_ACCESS_KEY
           requires:
             - build-jruby
-      - verify:
-          stack: "heroku-18"
-          bucket_name: $PRODUCTION_BUCKET_NAME
-          requires:
-            - upload-to-s3
   heroku-20:
     jobs:
       - build-jruby:
@@ -61,11 +24,17 @@ workflows:
           aws_secret_access_key: $PRODUCTION_AWS_SECRET_ACCESS_KEY
           requires:
             - build-jruby
-      - verify:
-          stack: "heroku-20"
+  heroku-22:
+    jobs:
+      - build-jruby:
+          stack: "heroku-22"
+      - upload-to-s3:
+          stack: "heroku-22"
           bucket_name: $PRODUCTION_BUCKET_NAME
+          aws_access_key_id: $PRODUCTION_AWS_ACCESS_KEY_ID
+          aws_secret_access_key: $PRODUCTION_AWS_SECRET_ACCESS_KEY
           requires:
-            - upload-to-s3
+            - build-jruby
 
 jobs:
   build-jruby:
