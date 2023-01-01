@@ -49,3 +49,4 @@ bundle exec rake "upload[9.3.0.0,2.6.8,heroku-18]"
 ```
 
 You can replace `heroku-18` and `9.2.8.0` with any stack and JRuby version.
+test
