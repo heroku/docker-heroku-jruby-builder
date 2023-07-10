@@ -1,0 +1,52 @@
+name: Build and upload JRuby runtime
+run-name: "Build and upload JRuby ${{ inputs.jruby_version }}${{ inputs.dry_run && ' (dry run)' || '' }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      jruby_version:
+          description: "The JRuby version to build, specified as X.Y.Z (i.e. 9.3.0.0)"
+          type: string
+          required: true
+      dry_run:
+          description: "Skip deploying to S3 (e.g. for testing)"
+          type: boolean
+          default: false
+          required: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: "us-east-1"
+  S3_BUCKET: "heroku-buildpack-ruby"
+
+jobs:
+  build-and-upload:
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: ["heroku-20", "heroku-22"]
+    env:
+      STACK: ${{ matrix.stack }}
+    runs-on: pub-hk-ubuntu-22.04-xlarge
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up system to run build scripts
+        uses: ruby/setup-ruby@ec02537da5712d66d4d50a0f33b7eb52773b5ed1
+        with:
+          ruby-version: '3.1'
+      - name: Install dependencies
+        run: bundle install
+      - name: Build Docker image
+        run: bundle exec rake "generate_image[$STACK]"
+      - name: Generate JRuby Dockerfile
+        run: bundle exec rake "new[${{ inputs.jruby_version }},$STACK]"
+      - name: Build and package JRuby runtime
+        run: bash "rubies/$STACK/jruby-${{ inputs.jruby_version }}.sh"
+      - name: Upload JRuby runtime archive to S3
+        if: (!inputs.dry_run)
+        run: bundle exec rake "upload[${{ inputs.jruby_version }},$STACK]"
