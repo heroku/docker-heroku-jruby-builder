@@ -1,9 +1,20 @@
-
+require 'fileutils'
 require 'uri'
 require 'net/http'
 
 S3_BUCKET_NAME = "heroku-buildpack-ruby"
 
+# JRuby targets a specific Ruby stdlib version, for example JRuby 9.4.3.0 implements Ruby 3.1.4 stdlib
+#
+# This method parses an XML file based on the input jruby version to determine what Ruby version
+# it targets.
+#
+# When people use jruby they specify it in their gemfile like this:
+#
+# ```
+#   # Gemfile
+#   ruby "3.1.4", engine: "jruby", engine_version: "9.4.3.0"
+# ```
 def ruby_stdlib_version(jruby_version: )
   uri = URI("https://raw.githubusercontent.com/jruby/jruby/#{jruby_version}/default.build.properties")
   default_props = Net::HTTP.get(uri)
@@ -15,6 +26,9 @@ def ruby_stdlib_version(jruby_version: )
   ruby_version
 end
 
+# Writes a shell script to disk for the given inputs
+#
+# This script is a convienece wrapper for calling `docker run`
 def write_shell_script(stack: , jruby_version: , ruby_stdlib_version: )
   source_folder = "rubies/#{stack}"
   FileUtils.mkdir_p(source_folder)
@@ -86,9 +100,10 @@ end
 
 desc "Build docker image for stack"
 task :generate_image, [:stack] do |t, args|
-  require 'fileutils'
-  FileUtils.cp("dockerfiles/Dockerfile.#{args[:stack]}", "Dockerfile")
-  system("docker build -t hone/jruby-builder:#{args[:stack]} .")
+  stack = args[:stack]
+
+  FileUtils.cp("dockerfiles/Dockerfile.#{stack}", "Dockerfile")
+  system("docker build -t hone/jruby-builder:#{stack} .")
   FileUtils.rm("Dockerfile")
 end
 
@@ -98,7 +113,6 @@ task :test, [:version, :ruby_version, :stack] do |t, args|
   require 'okyakusan'
   require 'rubygems/package'
   require 'zlib'
-  require 'net/http'
 
   def system_pipe(command)
     IO.popen(command) do |io|
