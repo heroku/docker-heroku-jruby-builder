@@ -48,10 +48,34 @@ def write_shell_script(stack: , jruby_version: , ruby_stdlib_version: )
     end
 end
 
+desc "Emits a changelog message"
+task :changelog, [:version] do |_, args|
+  jruby_version = args[:version]
+  ruby_stdlib_version = ruby_stdlib_version(jruby_version: jruby_version)
+
+  puts "Add a changelog item: https://devcenter.heroku.com/admin/changelog_items/new"
+
+  puts <<~EOM
+
+    ## JRuby version #{jruby_version} is now available
+
+    [JRuby v#{jruby_version}](/articles/ruby-support#ruby-versions) is now available on Heroku. To run
+    your app using this version of Ruby, add the following `ruby` directive to your Gemfile:
+
+    ```ruby
+    ruby "#{ruby_stdlib_version}", engine: "jruby", engine_version: "#{jruby_version}"
+    ```
+
+    The JRuby release notes can be found on the [JRuby website](https://www.jruby.org/news).
+
+  EOM
+end
+
 desc "Generate new jruby shell scripts"
 task :new, [:version, :stack] do |t, args|
   stack = args[:stack]
   jruby_version = args[:version]
+
   # JRuby 9000
   if (cmp_ver = Gem::Version.new(jruby_version)) <= Gem::Version.new("1.8.0")
     raise "Unsupported version, too old #{jruby_version}"
