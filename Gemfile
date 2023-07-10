@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 gem "rake"
-gem "aws-sdk", "3.0.1"
+gem "aws-sdk", "3.1.0"
 gem "okyakusan", github: "hone/okyakusan"
 gem "json"
-gem "nokogiri", "~> 1.10.10"
+gem "nokogiri", "~> 1.15.3"

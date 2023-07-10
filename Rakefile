@@ -1,51 +1,74 @@
+
+require 'uri'
+require 'net/http'
+
 S3_BUCKET_NAME = "heroku-buildpack-ruby"
+
+def ruby_stdlib_version(jruby_version: )
+  uri = URI("https://raw.githubusercontent.com/jruby/jruby/#{jruby_version}/default.build.properties")
+  default_props = Net::HTTP.get(uri)
+  ruby_version = default_props.match(/^version\.ruby=(.*)$/)[1]
+  if ruby_version.nil? || ruby_version.empty?
+    raise "Could not find Ruby StdLib version for jruby #{jruby_version} from #{uri}!"
+  end
+
+  ruby_version
+end
+
+def write_shell_script(stack: , jruby_version: , ruby_stdlib_version: )
+  source_folder = "rubies/#{stack}"
+  FileUtils.mkdir_p(source_folder)
+
+    file = "#{source_folder}/jruby-#{jruby_version}.sh"
+    puts "Writing #{file}"
+    File.open(file, 'w') do |file|
+      file.puts <<~FILE
+        #!/bin/sh
+
+        # Sets OUTPUT_DIR, CACHE_DIR, and STACK
+        source `dirname $0`/../common.sh
+        source `dirname $0`/common.sh
+
+        docker run -v $OUTPUT_DIR:/tmp/output -v $CACHE_DIR:/tmp/cache -e VERSION=#{jruby_version} -e RUBY_VERSION=#{ruby_stdlib_version} -t hone/jruby-builder:$STACK
+      FILE
+    end
+end
 
 desc "Generate new jruby shell scripts"
 task :new, [:version, :stack] do |t, args|
-  source_folder = "rubies/#{args[:stack]}"
-  FileUtils.mkdir_p(source_folder)
-
-  write_file = Proc.new do |ruby_version, jruby_version|
-    file = "#{source_folder}/ruby-#{ruby_version}-jruby-#{jruby_version}.sh"
-    puts "Writing #{file}"
-    File.open(file, 'w') do |file|
-      file.puts <<FILE
-#!/bin/sh
-
-source `dirname $0`/../common.sh
-source `dirname $0`/common.sh
-
-docker run -v $OUTPUT_DIR:/tmp/output -v $CACHE_DIR:/tmp/cache -e VERSION=#{jruby_version} -e RUBY_VERSION=#{ruby_version} -t hone/jruby-builder:$STACK
-FILE
-    end
-  end
-
+  stack = args[:stack]
+  jruby_version = args[:version]
   # JRuby 9000
-  if (cmp_ver = Gem::Version.new(args[:version])) > Gem::Version.new("1.8.0")
-    require 'uri'
-    require 'net/http'
-    uri = URI("https://raw.githubusercontent.com/jruby/jruby/#{args[:version]}/default.build.properties")
-    default_props = Net::HTTP.get(uri)
-    version_ruby = default_props.match(/^version\.ruby=(.*)$/)[1]
-    if version_ruby.nil? || version_ruby == ""
-      raise "Could not find Ruby StdLib version!"
-    end
-    write_file.call(version_ruby, args[:version])
+  if (cmp_ver = Gem::Version.new(jruby_version)) <= Gem::Version.new("1.8.0")
+    raise "Unsupported version, too old #{jruby_version}"
   else
-    ["1.8.7", "1.9.3", "2.0.0"].each do |ruby_version|
-      write_file.call(ruby_version, args[:version])
-    end
+    ruby_stdlib_version = ruby_stdlib_version(jruby_version: jruby_version)
+
+    write_shell_script(
+      stack: stack,
+      jruby_version: jruby_version,
+      ruby_stdlib_version: ruby_stdlib_version,
+    )
   end
 end
 
 desc "Upload a ruby to S3"
-task :upload, [:version, :ruby_version, :stack] do |t, args|
+task :upload, [:version, :stack] do |t, args|
   require 'aws-sdk-s3'
+  stack = args[:stack]
+  jruby_version = args[:version]
+  ruby_stdlib_version = ruby_stdlib_version(jruby_version: jruby_version)
 
-  filename        = "ruby-#{args[:ruby_version]}-jruby-#{args[:version]}.tgz"
+  filename = "ruby-#{ruby_stdlib_version}-jruby-#{jruby_version}.tgz"
   profile_name = "#{S3_BUCKET_NAME}#{args[:staging] ? "-staging" : ""}"
+  s3_key = "#{stack}/#{filename.sub(/-(preview|rc)\d+/, '')}"
+  output_file  = "builds/#{stack}/#{filename}"
 
-  s3_key       = "#{args[:stack]}/#{filename.sub(/-(preview|rc)\d+/, '')}"
+  if File.exists?(output_file)
+    puts "Uploading #{output_file} to s3://#{profile_name}/#{s3_key}"
+  else
+    raise "Filename #{output_file} does not exist"
+  end
 
   s3 = Aws::S3::Resource.new(
     region: "us-east-1",
@@ -55,9 +78,7 @@ task :upload, [:version, :ruby_version, :stack] do |t, args|
   )
   bucket       = s3.bucket(profile_name)
   s3_object    = bucket.object(s3_key)
-  output_file  = "builds/#{args[:stack]}/#{filename}"
 
-  puts "Uploading #{output_file} to s3://#{profile_name}/#{s3_key}"
   File.open(output_file, 'rb') do |file|
     s3_object.put(body: file, acl: "public-read")
   end
