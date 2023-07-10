@@ -50,3 +50,6 @@ jobs:
       - name: Upload JRuby runtime archive to S3
         if: (!inputs.dry_run)
         run: bundle exec rake "upload[${{ inputs.jruby_version }},$STACK]"
+      - name: Output CHANGELOG
+        if: (!inputs.dry_run)
+        run: bundle exec rake "changelog[${{inputs.jruby_version}}]"
