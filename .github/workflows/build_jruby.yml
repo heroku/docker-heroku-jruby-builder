@@ -30,11 +30,9 @@ jobs:
   build-and-upload:
     strategy:
       matrix:
-        include:
-          - env:
-              STACK: "heroku-20"
-          - env:
-              STACK: "heroku-22"
+        stack: ["heroku-20", "heroku-22"]
+    env:
+      STACK: ${{ matrix.stack }}
     runs-on: pub-hk-ubuntu-22.04-xlarge
     steps:
       - name: Checkout
