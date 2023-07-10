@@ -26,6 +26,7 @@ env:
 jobs:
   build-and-upload:
     strategy:
+      fail-fast: false
       matrix:
         stack: ["heroku-20", "heroku-22"]
     env:
