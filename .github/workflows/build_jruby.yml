@@ -47,7 +47,10 @@ jobs:
         run: bundle exec rake "new[${{ inputs.jruby_version }},$STACK]"
       - name: Build and package JRuby runtime
         run: bash "rubies/$STACK/jruby-${{ inputs.jruby_version }}.sh"
-      - name: Upload JRuby runtime archive to S3
+      - name: Upload JRuby runtime archive to S3 dry run
+        if: (inputs.dry_run)
+        run: aws s3 sync ./builds "s3://${S3_BUCKET}" --dryrun
+      - name: Upload JRuby runtime archive to S3 production
         if: (!inputs.dry_run)
         run: aws s3 sync ./builds "s3://${S3_BUCKET}"
       - name: Output CHANGELOG
