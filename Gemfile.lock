@@ -1419,14 +1419,14 @@ GEM
       aws-eventstream (~> 1, >= 1.0.2)
     jmespath (1.6.2)
     json (2.6.3)
-    mini_portile2 (2.8.2)
+    mini_portile2 (2.8.5)
     netrc (0.7.9)
-    nokogiri (1.15.3)
+    nokogiri (1.16.2)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    nokogiri (1.15.3-x86_64-linux)
+    nokogiri (1.16.2-x86_64-linux)
       racc (~> 1.4)
-    racc (1.7.1)
+    racc (1.7.3)
     rake (13.0.6)
 
 PLATFORMS
@@ -1436,7 +1436,7 @@ PLATFORMS
 DEPENDENCIES
   aws-sdk (= 3.1.0)
   json
-  nokogiri (~> 1.15.3)
+  nokogiri (~> 1.16.2)
   okyakusan!
   rake
 
