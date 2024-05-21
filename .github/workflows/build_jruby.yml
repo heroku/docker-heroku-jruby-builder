@@ -28,31 +28,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        stack: ["heroku-20", "heroku-22"]
+        base_image: ["heroku-20", "heroku-22", "heroku-24"]
     env:
-      STACK: ${{ matrix.stack }}
+      BASE_IMAGE: ${{ matrix.base_image }}
     runs-on: pub-hk-ubuntu-22.04-xlarge
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Set up system to run build scripts
-        uses: ruby/setup-ruby@ec02537da5712d66d4d50a0f33b7eb52773b5ed1
-        with:
-          ruby-version: '3.1'
-      - name: Install dependencies
-        run: bundle install
+        uses: actions/checkout@v4
+      - name: Print changelog
+        run: bin/print_changelog ${{ inputs.jruby_version }} | tee $GITHUB_STEP_SUMMARY
       - name: Build Docker image
-        run: bundle exec rake "generate_image[$STACK]"
-      - name: Generate JRuby Dockerfile
-        run: bundle exec rake "new[${{ inputs.jruby_version }},$STACK]"
+        run: bin/activate_docker $BASE_IMAGE
       - name: Build and package JRuby runtime
-        run: bash "rubies/$STACK/jruby-${{ inputs.jruby_version }}.sh"
+        run: bin/build_jruby $BASE_IMAGE ${{ inputs.jruby_version }}
+      - name: Test JRuby runtime
+        run: bin/print_summary $BASE_IMAGE ${{ inputs.jruby_version }} | tee $GITHUB_STEP_SUMMARY
       - name: Upload JRuby runtime archive to S3 dry run
         if: (inputs.dry_run)
         run: aws s3 sync ./builds "s3://${S3_BUCKET}" --dryrun
       - name: Upload JRuby runtime archive to S3 production
         if: (!inputs.dry_run)
         run: aws s3 sync ./builds "s3://${S3_BUCKET}"
-      - name: Output CHANGELOG
-        if: (!inputs.dry_run)
-        run: bundle exec rake "changelog[${{inputs.jruby_version}}]"

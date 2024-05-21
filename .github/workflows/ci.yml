@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run ShellCheck
+        run: |
+            shellcheck *.sh -x &&
+            shellcheck bin/* -x
+
+  integration_test:
+    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-22.04-arm-large' || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        base_image: ["heroku-20", "heroku-22", "heroku-24"]
+        jruby_version: ["9.4.7.0"]
+        arch: ["amd64", "arm64"]
+        exclude:
+          - base_image: "heroku-20"
+            arch: "arm64"
+          - base_image: "heroku-22"
+            arch: "arm64"
+    env:
+      BASE_IMAGE: ${{ matrix.base_image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Docker and missing development libs (ARM64 only)
+        if: matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update --error-on=any
+          sudo apt-get install -y --no-install-recommends acl docker.io docker-buildx libc6-dev
+          sudo usermod -aG docker $USER
+          sudo setfacl --modify user:$USER:rw /var/run/docker.sock
+      - name: Print changelog
+        run: bin/print_changelog ${{ matrix.jruby_version }} | tee $GITHUB_STEP_SUMMARY
+      - name: Build Docker image
+        run: bin/activate_docker ${{ matrix.base_image }}
+      - name: Build and package JRuby runtime
+        run: bin/build_jruby ${{ matrix.base_image }} ${{ matrix.jruby_version }}
+      - name: Test JRuby runtime with ARCH
+        if: matrix.base_image == 'heroku-24'
+        run: bin/print_summary ${{ matrix.base_image }} ${{ matrix.jruby_version }} ${{ matrix.arch }}
+      - name: Test JRuby runtime without ARCH
+        if: matrix.base_image != 'heroku-24'
+        run: bin/print_summary ${{ matrix.base_image }} ${{ matrix.jruby_version }}

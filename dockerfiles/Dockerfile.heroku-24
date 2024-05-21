@@ -1,4 +1,6 @@
-FROM heroku/heroku:22-build
+FROM heroku/heroku:24-build
+
+USER root
 
 RUN apt-get update -y; apt-get install default-jre default-jdk -y
 

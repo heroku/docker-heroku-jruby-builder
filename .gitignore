@@ -3,5 +3,6 @@ builds/
 cache/
 vendor/bundle/
 .env
-bin/
 .DS_Store
+Dockerfile
+rubies/

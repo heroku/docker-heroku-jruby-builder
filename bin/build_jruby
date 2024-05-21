@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+BASE_IMAGE=$1
+VERSION=$2
+PROJ_DIR=$(cd "$(dirname "$0")/.." || exit; pwd)
+
+RUBY_STDLIB_VERSION=${RUBY_STDLIB_VERSION:-$("$PROJ_DIR/bin/get_stdlib_version" "$VERSION")}
+
+echo "Building JRuby $VERSION (ruby $RUBY_STDLIB_VERSION) on $BASE_IMAGE"
+
+OUTPUT_DIR=${OUTPUT_DIR:-"$PROJ_DIR/builds"}
+CACHE_DIR=${CACHE_DIR:-"$PROJ_DIR/cache"}
+
+docker run -v "$OUTPUT_DIR":/tmp/output -v "$CACHE_DIR":/tmp/cache -e VERSION="$VERSION" -e RUBY_STDLIB_VERSION="$RUBY_STDLIB_VERSION" -e BASE_IMAGE="$BASE_IMAGE" -t heroku/jruby-builder:"$BASE_IMAGE"

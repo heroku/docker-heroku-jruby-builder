@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+VERSION=$1
+PROJ_DIR=$(cd "$(dirname "$0")/.." || exit; pwd)
+RUBY_STDLIB_VERSION=${RUBY_STDLIB_VERSION:-$("$PROJ_DIR/bin/get_stdlib_version" "$VERSION")}
+
+echo "Add a changelog item: https://devcenter.heroku.com/admin/changelog_items/new"
+echo
+
+cat <<EOM
+## JRuby version $VERSION is now available
+
+[JRuby v$VERSION](/articles/ruby-support#ruby-versions) is now available on Heroku. To run
+your app using this version of Ruby, add the following \`ruby\` directive to your Gemfile:
+
+\`\`\`ruby
+ruby "$RUBY_STDLIB_VERSION", engine: "jruby", engine_version: "$VERSION"
+\`\`\`
+
+The JRuby release notes can be found on the [JRuby website](https://www.jruby.org/news).
+EOM
