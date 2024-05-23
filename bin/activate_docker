@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+BASE_IMAGE=$1
+PROJ_DIR=$(cd "$(dirname "$0")/.." || exit; pwd)
+
+cp "$PROJ_DIR/dockerfiles/Dockerfile.$BASE_IMAGE" "$PROJ_DIR/Dockerfile"
+
+docker build -t heroku/jruby-builder:"$BASE_IMAGE" .

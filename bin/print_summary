@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+BASE_IMAGE=$1
+VERSION=$2
+ARCH=${3:-}
+PROJ_DIR=$(cd "$(dirname "$0")/.." || exit; pwd)
+
+RUBY_STDLIB_VERSION=${RUBY_STDLIB_VERSION:-$("$PROJ_DIR/bin/get_stdlib_version" "$VERSION")}
+
+echo "## Printing gem version for JRuby $VERSION (ruby stlib $RUBY_STDLIB_VERSION) on $BASE_IMAGE"
+echo
+
+if [ -z "$ARCH" ]; then
+    echo "- No ARCH requested"
+    ruby_tar_file="$BASE_IMAGE/ruby-$RUBY_STDLIB_VERSION-jruby-$VERSION.tgz"
+else
+    echo "- Requested ARCH '$ARCH'"
+    ruby_tar_file="$BASE_IMAGE/$ARCH/ruby-$RUBY_STDLIB_VERSION-jruby-$VERSION.tgz"
+fi
+
+docker run -v "$PROJ_DIR"/builds:/tmp/output heroku/jruby-builder:"$BASE_IMAGE" \
+  bash -c "mkdir /tmp/unzipped && tar xzf /tmp/output/$ruby_tar_file -C /tmp/unzipped && \
+  echo -n '- JRuby version: ' && /tmp/unzipped/bin/ruby -v"

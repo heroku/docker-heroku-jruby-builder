@@ -1,67 +1,51 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-workspace_dir=$1
-output_dir=$2
-cache_dir=$3
+set -euo pipefail
 
-jruby_src_file="jruby-dist-$VERSION-src.zip"
+workspace_dir="$1"
+output_dir="$2"
+cache_dir="$3"
 
-cd $cache_dir
-if [ -n "${GIT_URL:-}" ]; then
-	git clone $GIT_URL release
-	cd release
-	git checkout ${GIT_TREEISH:-$VERSION}
-	MAVEN_OPTS=-XX:MaxPermSize=768m ./mvnw install -Pdist
-	cp maven/jruby-dist/target/jruby-dist-$VERSION-src.tar.gz $cache_dir/$jruby_src_file
-	cd ..
+jruby_bin_file="jruby-dist-$VERSION-bin.tar.gz"
+
+if [ -f "$cache_dir/$jruby_bin_file" ]; then
+	echo "Using cached $jruby_bin_file"
 else
-	if [ ! -f $jruby_src_file ]; then
-		echo "Downloading $jruby_src_file"
-		curl -fs -O -L "https://repo1.maven.org/maven2/org/jruby/jruby-dist/$VERSION/$jruby_src_file"
-	fi
+	echo "Downloading $jruby_bin_file"
+	curl -s -L -o "$cache_dir/$jruby_bin_file" "https://repo1.maven.org/maven2/org/jruby/jruby-dist/$VERSION/$jruby_bin_file"
 fi
 
-cd $workspace_dir
-unzip $cache_dir/$jruby_src_file
-cd jruby-$VERSION
-if [ "$VERSION" = "1.7.5" ]; then
-	package_file="/tmp/buildpack_*/vendor/package.rb"
-	cp $package_file lib/ruby/shared/rubygems
-fi
+echo "Extracting $jruby_bin_file"
+tar -xvf "$cache_dir/$jruby_bin_file" -C "$workspace_dir" --strip-components=1
 
+echo "Preparing for Heroku"
 
-if echo "$VERSION" | grep -q "^1\.7\."; then
-	echo "Upgrading to jruby-openssl 0.9.21"
-	sed -i.bak s/0.9.19/0.9.21/g lib/pom.rb
-	sed -i.bak s/0.9.19/0.9.21/g lib/pom.xml
-fi
+rm "$workspace_dir"/bin/*.bat
+rm "$workspace_dir"/bin/*.dll
+rm "$workspace_dir"/bin/*.exe
+rm -rf "$workspace_dir"/lib/target
 
-var=$(echo $RUBY_VERSION | awk -F"." '{print $1,$2,$3}')
-set -- $var
-major=$1
-minor=$2
-patch=$3
+# Ensure a bin/ruby binary exists
+cd "$workspace_dir/bin"; ln -s "jruby" "ruby"; cd -
 
-if [ -f mvnw ]; then
-	./mvnw -Djruby.default.ruby.version=$major.$minor -Dmaven.repo.local=$cache_dir/.m2/repository -T4
-else
-	cd /opt
-	curl http://apache.org/dist/maven/maven-3/3.3.1/binaries/apache-maven-3.3.1-bin.tar.gz -s -o - | tar xzmf -
-	ln -s /opt/apache-maven-3.3.1/bin/mvn /usr/local/bin
-	cd -
-	mvn -Djruby.default.ruby.version=$major.$minor -Dmaven.repo.local=$cache_dir/.m2/repository -T4
-fi
-if [ $? -ne 0 ]; then
-	exit $1
-fi
-rm bin/*.bat
-rm bin/*.dll
-rm bin/*.exe
-rm -rf lib/target
-if [ -d lib/jni ] ; then
-	find lib/jni/* ! -name x86_64-Linux -print0 | xargs -0 rm -rf --
-fi
-#ln -s jruby bin/ruby
-mkdir -p $output_dir
-tar czf $output_dir/ruby-$RUBY_VERSION-jruby-$VERSION.tgz bin/ lib/
-ls $output_dir
+tgz_filename="ruby-$RUBY_STDLIB_VERSION-jruby-$VERSION.tgz"
+echo "Packaging $tgz_filename"
+
+cd "$workspace_dir"
+mkdir -p "$output_dir/$BASE_IMAGE/amd64"
+tar --exclude "$(find lib/jni/* -maxdepth 1 -not -name x86_64-Linux)" \
+	-czf "$output_dir/$BASE_IMAGE/amd64/$tgz_filename" bin/ lib/
+
+mkdir -p "$output_dir/$BASE_IMAGE/arm64"
+
+tar --exclude "$(find lib/jni/* -maxdepth 1 -not -name aarch64-Linux)" \
+	-czf "$output_dir/$BASE_IMAGE/arm64/$tgz_filename" bin/ lib/
+cd -
+
+# Support stacks prior to heroku-24
+cp "$output_dir/$BASE_IMAGE/amd64/$tgz_filename" \
+	"$output_dir/$BASE_IMAGE/$tgz_filename"
+
+ls "$output_dir/$BASE_IMAGE"
+ls "$output_dir/$BASE_IMAGE/arm64"
+ls "$output_dir/$BASE_IMAGE/amd64"
