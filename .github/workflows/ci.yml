@@ -6,7 +6,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,7 +16,7 @@ jobs:
             shellcheck bin/* -x
 
   integration_test:
-    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-22.04-arm-large' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-24.04-arm-large' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -33,13 +33,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install Docker and missing development libs (ARM64 only)
-        if: matrix.arch == 'arm64'
-        run: |
-          sudo apt-get update --error-on=any
-          sudo apt-get install -y --no-install-recommends acl docker.io docker-buildx libc6-dev
-          sudo usermod -aG docker $USER
-          sudo setfacl --modify user:$USER:rw /var/run/docker.sock
       - name: Print changelog
         run: bin/print_changelog ${{ matrix.jruby_version }} | tee $GITHUB_STEP_SUMMARY
       - name: Build Docker image
